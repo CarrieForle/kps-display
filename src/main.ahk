@@ -6,15 +6,15 @@
 FileEncoding "UTF-8"
 
 charCount := 0
-chars := []
-holdChars := []
+charCreationTicks := Keys()
+holdcharCreationTicks := []
 CHECK_INTERVAL := 50 ; ms
 
 onKeyDown(inputHook, vk, sc)
 {
     global charCount
 
-    for char in holdChars
+    for char in holdcharCreationTicks
     {
         if char == vk
         {
@@ -22,33 +22,20 @@ onKeyDown(inputHook, vk, sc)
         }
     }
 
-    chars.Push(Key(1, A_TickCount))
-    holdChars.Push(vk)
+    charCreationTicks.Push(A_TickCount)
+    holdcharCreationTicks.Push(vk)
 }
 
 onKeyUp(inputHook, vk, sc)
 {
-    for i, char in holdChars
+    for i, char in holdcharCreationTicks
     {
         if char == vk
         {
-            holdChars.RemoveAt(i)
+            holdcharCreationTicks.RemoveAt(i)
             return
         }
     }
-}
-
-write(filename, text)
-{
-    try
-    {
-        FileDelete filename
-    } catch
-    {
-
-    }
-
-    FileAppend text, filename
 }
 
 inputHookObj := InputHook("B V N L0")
@@ -61,24 +48,20 @@ inputHookObj.Start()
 loop {
     start := A_TickCount
     ; arrays' first index is 1
-    while chars.Length > 0 and A_TickCount - chars[1].creationTick > 1000
+    while charCreationTicks.Length > 0 and A_TickCount - charCreationTicks[1] > 1000
     {
-        chars.RemoveAt(1)
+        charCreationTicks.RemoveAt(1)
         ; ToolTip "POP", 1920 // 2 - 300, 1080 // 2, 2
     }
 
-    totalChars := 0
     evaluation_string := ""
 
-    for char in chars
+    for creationTick in charCreationTicks
     {
-        totalChars += char.length
-        evaluation_string .= "`n" char.creationTick
+        evaluation_string .= "`n" creationTick
     }
 
-    ; evaluation_string := totalChars " " CHECK_INTERVAL - (A_TickCount - start) "`n" A_TickCount "`n" (A_TickCount - start) . evaluation_string 
-
-    write "text.txt", String(totalChars)
+    ; evaluation_string := totalcharCreationTicks " " CHECK_INTERVAL - (A_TickCount - start) "`n" A_TickCount "`n" (A_TickCount - start) . evaluation_string 
 
     Sleep CHECK_INTERVAL - (A_TickCount - start)
 }
