@@ -5,12 +5,12 @@ ShowOption(guiObj, guiCtrlObj, item, isRightClick, x, y)
     MsgBox "TODO You Right Clicked!"
 }
 
-myGui := Gui("Resize")
-myGui.OnEvent("ContextMenu", ShowOption)
+mainGui := Gui("Resize")
+mainGui.OnEvent("ContextMenu", ShowOption)
 ; KPS: key per second
-kps := myGui.AddText("W300 H300 Right", "##")
+kps := mainGui.AddText("W300 H300 Right", "##")
 kps.SetFont("S72 Q5", "Segoe UI")
-myGui.Show("W300 H300")
+mainGui.Show("W300 H300")
 
 get_kps()
 {
