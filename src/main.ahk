@@ -1,20 +1,27 @@
 #SingleInstance Force
 #Requires AutoHotkey v2.0
-#Include "key.ahk"
-#Include "gui.ahk"
+#Include "gui/gui.ahk"
+#Include "message.ahk"
+#Include "main.ahk"
+#Include "message.ahk"
+#Include "resread.ahk"
+#Include "config.ahk"
+
+;@Ahk2Exe-AddResource res/format_help.txt*6
 
 FileEncoding "UTF-8"
 
-charCount := 0
-charCreationTicks := Keys()
-holdcharCreationTicks := []
-CHECK_INTERVAL := 50 ; ms
+char_count := 0
+char_creation_ticks := []
+hold_char_creation_ticks := []
+PER_SECOND := 1000
+CHECK_INTERVAL := 77 ; ms
 
 onKeyDown(inputHook, vk, sc)
 {
-    global charCount
+    global char_count
 
-    for char in holdcharCreationTicks
+    for char in hold_char_creation_ticks
     {
         if char == vk
         {
@@ -22,46 +29,39 @@ onKeyDown(inputHook, vk, sc)
         }
     }
 
-    charCreationTicks.Push(A_TickCount)
-    holdcharCreationTicks.Push(vk)
+    char_creation_ticks.Push(A_TickCount)
+    hold_char_creation_ticks.Push(vk)
 }
 
-onKeyUp(inputHook, vk, sc)
+onKeyUp(input_hook, vk, sc)
 {
-    for i, char in holdcharCreationTicks
+    for i, char in hold_char_creation_ticks
     {
         if char == vk
         {
-            holdcharCreationTicks.RemoveAt(i)
+            hold_char_creation_ticks.RemoveAt(i)
             return
         }
     }
 }
 
-inputHookObj := InputHook("B V N L0")
-inputHookObj.OnKeyUp := onKeyUp
-inputHookObj.OnKeyDown := onKeyDown
-inputHookObj.NotifyNonText := true
-inputHookObj.KeyOpt("{All}", "N")
-inputHookObj.Start()
+input_hook := InputHook("B V N L0")
+input_hook.OnKeyUp := onKeyUp
+input_hook.OnKeyDown := onKeyDown
+input_hook.NotifyNonText := true
+input_hook.KeyOpt("{All}", "N")
+input_hook.Start()
+init_guis()
+get_guis("main").Show()
+SetTimer kps_update, CHECK_INTERVAL
 
-loop {
-    start := A_TickCount
-    ; arrays' first index is 1
-    while charCreationTicks.Length > 0 and A_TickCount - charCreationTicks[1] > 1000
+kps_update()
+{
+    while char_creation_ticks.Length > 0 and A_TickCount - char_creation_ticks[1] > PER_SECOND
     {
-        charCreationTicks.RemoveAt(1)
+        char_creation_ticks.RemoveAt(1)
         ; ToolTip "POP", 1920 // 2 - 300, 1080 // 2, 2
     }
-
-    evaluation_string := ""
-
-    for creationTick in charCreationTicks
-    {
-        evaluation_string .= "`n" creationTick
-    }
-
-    ; evaluation_string := totalcharCreationTicks " " CHECK_INTERVAL - (A_TickCount - start) "`n" A_TickCount "`n" (A_TickCount - start) . evaluation_string 
-
-    Sleep CHECK_INTERVAL - (A_TickCount - start)
+    
+    update_kps_text(char_creation_ticks.Length)
 }
