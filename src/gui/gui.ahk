@@ -2,38 +2,38 @@
 #Include "config.ahk"
 #Include "about.ahk"
 
-__guis := Map()
-
-get_guis(key)
+off_and_on(my_gui)
 {
-    return __guis[key]
+    for gui_ctrl in my_gui
+    {
+        gui_ctrl.Enabled := false
+        gui_ctrl.Enabled := true
+    }
 }
-;
-init_guis()
+
+init_guis(config)
 {
-    global __guis
     static called := false
+    static guis := Map()
 
     if !called {
-        main_gui := init_main_gui()
-        __guis["main"] := main_gui
+        main_gui := init_main_gui(config)
+        guis["main"] := main_gui
 
-        config_gui := init_config_gui(main_gui)
-        __guis["config"] := config_gui
+        config_gui := init_config_gui(main_gui, config)
+        guis["config"] := config_gui
 
         about_gui := init_about_gui(main_gui)
-        __guis["about"] := about_gui
+        guis["about"] := about_gui
 
         option_menu := Menu()
-        show_option := _real_show_option.bind(option_menu)
         option_menu.Add("Configure", _real_show_config.Bind(main_gui, config_gui))
         option_menu.Add("About", _real_show_about.Bind(main_gui, about_gui))
-        main_gui.OnEvent("ContextMenu", show_option)
-
-        __guis["option_menu"] := option_menu
+        main_gui.OnEvent("ContextMenu", _real_show_option.bind(option_menu))
+        _real_enable_main(main_gui)
 
         called := true
     }
 
-    return (main_gui, config_gui, about_gui)
+    return guis
 }

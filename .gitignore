@@ -1,2 +1,7 @@
 /src/text.txt
+/src/test.ahk
 .vscode/
+/struct_padding.txt
+/src/*.ini
+!/src/profile.ini
+!/src/default.ini

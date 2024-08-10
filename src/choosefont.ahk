@@ -8,16 +8,154 @@ class Font
     italic := false
     underline := false
     strikethrough := false
-    height := false
+    height := 0
 
-    __New(typeface, height, weight, italic, underline, strikethrough)
+    static Make(typeface, height, weight, italic, underline, strikethrough)
     {
-        this.typeface := typeface
-        this.height := height
-        this.weight := 400
-        this.italic := italic
-        this.underline := underline
-        this.strikethrough := strikethrough
+        res := Font()
+        
+        res.typeface := typeface
+        res.height := height
+        res.weight := weight
+        res.italic := italic
+        res.underline := underline
+        res.strikethrough := strikethrough
+
+        return res
+    }
+
+    static from_config(style_str)
+    {
+        config_font := Font()
+        is_weight_specified := false
+        style_str := StrUpper(style_str)
+
+        Loop Parse style_str, ",", A_Space A_Tab
+        {
+            match := true
+
+            switch A_LoopField
+            {
+                case "BOLD":
+                    if !is_weight_specified
+                    {
+                        config_font.weight := 700
+                    }
+                case "ITALIC":
+                    config_font.italic := true
+                case "STRIKE":
+                    config_font.strikethrough := true
+                case "UNDERLINE":
+                    config_font.underline := true
+                case "NORMAL":
+                    if !is_weight_specified
+                    {
+                        config_font.weight := 400
+                        config_font.underline := false
+                        config_font.strikethrough := false
+                        config_font.italic := false
+                    }
+                default:
+                    match := false
+            }
+
+            if match
+            {
+                continue
+            }
+
+            if RegExMatch(A_LoopField, "^S(\d+)$", &match)
+            {
+                height := Integer(match[1])
+
+                if height <= 0
+                {
+                    throw ValueError("Font size must be positive. Found " height)
+                }
+
+                config_font.height := height
+            }
+            else if RegExMatch(A_LoopField, "^W(\d+)$", &match)
+            {
+                weight := Integer(match[1])
+
+                if weight <= 0 || weight > 1000
+                {
+                    throw ValueError("Font weight must be between 0 and 1000. Found " weight)
+                }
+
+                config_font.weight := weight
+                is_weight_specified := true
+            }
+            else if A_LoopField
+            {
+                config_font.typeface := A_LoopField
+            }
+        }
+
+        return config_font
+    }
+
+    to_config()
+    {
+        result := StrLower(this.typeface) ", s" this.height ", "
+        
+        switch this.weight
+        {
+            case 700:
+                result .= "bold"
+            case 400:
+                _ := 0
+            default:
+                result .= "w" this.weight
+        }
+
+        if this.italic
+        {
+            result .= ", italic"
+        }
+        if this.underline
+        {
+            result .= ", underline"
+        }
+        if this.strikethrough
+        {
+            result .= ", strike"
+        }
+
+        return result
+    }
+
+    set(my_gui, color, quality := "Q2")
+    {
+        style := ""
+
+        if this.italic
+        {
+            style .= "italic "
+        }
+        if this.strikethrough
+        {
+            style .= "strike "
+        }
+        if this.underline
+        {
+            style .= "underline "
+        }
+
+        my_gui.SetFont("norm " quality " " style "s" this.height " w" this.weight " c" color, this.typeface)
+    }
+
+    equal(other)
+    {
+        res := this.typeface = other.typeface &&
+            this.weight = other.weight &&
+            this.italic = other.italic &&
+            this.underline = other.underline &&
+            this.strikethrough = other.strikethrough &&
+            this.height = other.height
+        
+        return res
     }
 }
 ; https://learn.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-logfontw#members
@@ -33,11 +171,15 @@ _rev_muldiv(muldiv, b, c)
 
 choose_font(owner_hwnd := 0, &output?, style?)
 {
-    ; 28 + 2 * 31 + 1 = 91
-    static logfont := Buffer(91)
+    logfont := Buffer(91)
+    dc := DllCall("GetDC", "Ptr", 0)
+    LOGPIXELY := DllCall("GetDeviceCaps", "Ptr", dc, "Int", 90)
 
-    LOGPIXELY := DllCall("GetDeviceCaps", "Ptr", DllCall("GetDC", "Ptr", 0), "Int", 90)
-
+    if !DllCall("ReleaseDC", "Ptr", 0, "Ptr", dc)
+    {
+        MsgBox "Couldn't release Device Context. The program is terminated", "Error", 16
+        ExitApp
+    }
     font_height := -_muldiv(IsSet(style) ? style.height : 12, LOGPIXELY, 72)
 
     offset := NumPut(
@@ -67,7 +209,7 @@ choose_font(owner_hwnd := 0, &output?, style?)
 
     if A_PtrSize = 8
     { 
-        static tag_choose_font := Buffer(104)
+        tag_choose_font := Buffer(104)
 
         NumPut "UInt", tag_choose_font.Size,
             "Int", 0, ; padding
@@ -130,13 +272,11 @@ choose_font(owner_hwnd := 0, &output?, style?)
     height := -_rev_muldiv(NumGet(logfont, "Int"), LOGPIXELY, 72)
     weight := NumGet(logfont, 16, "Int")
     italic := NumGet(logfont, 20, "UChar") ? true : false ; originally return 255 or 0
-    underline := NumGet(logfont, 21, "UChar")
-    strikethrough := NumGet(logfont, 22, "UChar")
+    ; underline := NumGet(logfont, 21, "UChar")
+    ; strikethrough := NumGet(logfont, 22, "UChar")
     typeface := StrGet(logfont.ptr + 28, , "UTF-16")
 
-    MsgBox "font height: " height "'`nWeight: " weight "'`nitalic: " italic "'`nunderline: " underline "'`nstrikethrough: " strikethrough "'`ntypeface: " typeface "'"
-
-    return output := Font(typeface, height, weight, italic, underline, strikethrough)
+    return output := Font.Make(typeface, height, weight, italic, style.underline, style.strikethrough)
 }
 
 ; choose_font(,, Font("Consolas", 18, 700, 1, 1, 1))
