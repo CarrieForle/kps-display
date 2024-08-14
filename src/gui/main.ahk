@@ -46,12 +46,20 @@ show_option(option_menu, guiObj, guiCtrlObj, item, isRightClick, x, y)
 
 _real_resize(&config, gui_obj, minmax, width, height)
 {
-    margin := config.general.margin
-    kps_text := gui_obj["kps_text"]
-    kps_text.Move(margin[4], margin[1], width - margin[2] - margin[4], height - margin[1] - margin[3])
-    gui_obj.size := [width, height]
+    if minmax = -1
+    {
+        SetTimer kps_update, 0
+    }
+    else
+    {
+        SetTimer kps_update, config.general.update_interval
+        margin := config.general.margin
+        kps_text := gui_obj["kps_text"]
+        kps_text.Move(margin[4], margin[1], width - margin[2] - margin[4], height - margin[1] - margin[3])
+        gui_obj.size := [width, height]
 
-    kps_text.Redraw()
+        kps_text.Redraw()
+    }
 }
 
 enable_main_and_destroy_self(main_gui, orig_gui, config?)
@@ -80,7 +88,7 @@ close_main_gui(gui_obj)
 init_main_gui(config, context_menu, dimension)
 {
     main_gui := Gui("Resize", "KPS Display")
-
+    main_gui.context_menu := context_menu
     main_gui.size := dimension
     main_gui.Title := "KPS Display"
 
