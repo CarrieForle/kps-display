@@ -1,4 +1,20 @@
-#Requires AutoHotkey v2.0
+/*
+ * Copyright (c) 2024 CarrieForle
+ * This file is part of KPS Display.
+ *
+ * KPS Display is free software: you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation, either
+ * version 3 of the License, or (at your option) any later version.
+ *
+ * KPS Display is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See the GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with KPS Display. If not, see <https://www.gnu.org/licenses/>.
+ */
 
 class RGB
 {
@@ -43,11 +59,9 @@ class RGB
         return RGB.from_string(rgb_str)
     }
 
-    
-
     static from_string(rgb_str)
     {
-        if "#" = SubStr(rgb_str, 1, 1 )
+        if "#" = SubStr(rgb_str, 1, 1)
         {
             rgb_str := "0x" SubStr(rgb_str, 2)
         }
@@ -56,20 +70,20 @@ class RGB
             rgb_str := "0x" rgb_str
         }
 
+        ; https://www.autohotkey.com/boards/viewtopic.php?t=3925
         try
         {
-            ; https://www.autohotkey.com/boards/viewtopic.php?t=3925
             if StrLen(rgb_str) == 8
             {
                 return RGB(
-                    rgb_str >> 16 & 0xff, 
-                    rgb_str >> 8 & 0xff, 
-                    rgb_str & 0xff, 
+                    rgb_str >> 16 & 0xff,
+                    rgb_str >> 8 & 0xff,
+                    rgb_str & 0xff,
                 )
             }
         }
-            
-        throw ValueError("Invalid Value")
+
+        throw ValueError("Invalid RGB: " SubStr(rgb_str, 3))
     }
 
     to_string()
@@ -201,6 +215,8 @@ choose_color(hwnd_owner := 0, &output?, predefined_color_boxes?)
         {
             MsgBox(Format("Failed to choose color: 0x{:x}", errno), "Error", 16)
         }
+
+        return output ?? RGB(255, 255, 255)
     }
 
     selected_rgb := A_PtrSize = 8 ? NumGet(tag_choose_color, 24, "UInt") : NumGet(tag_choose_color, 12, "UInt")

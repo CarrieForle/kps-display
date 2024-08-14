@@ -1,5 +1,20 @@
-; code inspired by https://www.autohotkey.com/board/topic/94083-ahk-11-font-and-color-dialogs/
-; https://learn.microsoft.com/en-us/windows/win32/api/commdlg/ns-commdlg-choosefontw
+/*
+ * Copyright (c) 2024 CarrieForle
+ * This file is part of KPS Display.
+ *
+ * KPS Display is free software: you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation, either
+ * version 3 of the License, or (at your option) any later version.
+ *
+ * KPS Display is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See the GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with KPS Display. If not, see <https://www.gnu.org/licenses/>.
+ */
 
 class Font
 {
@@ -8,7 +23,7 @@ class Font
     italic := false
     underline := false
     strikethrough := false
-    height := 0
+    height := 12
 
     static Make(typeface, height, weight, italic, underline, strikethrough)
     {
@@ -98,16 +113,16 @@ class Font
 
     to_config()
     {
-        result := StrLower(this.typeface) ", s" this.height ", "
+        result := StrTitle(this.typeface) ", s" this.height
         
         switch this.weight
         {
             case 700:
-                result .= "bold"
+                result .= ", bold"
             case 400:
                 _ := 0
             default:
-                result .= "w" this.weight
+                result .= ", w" this.weight
         }
 
         if this.italic
@@ -169,7 +184,7 @@ _rev_muldiv(muldiv, b, c)
     return muldiv * c // b
 }
 
-choose_font(owner_hwnd := 0, &output?, style?)
+choose_font(owner_hwnd := 0, &output?)
 {
     logfont := Buffer(91)
     dc := DllCall("GetDC", "Ptr", 0)
@@ -177,20 +192,20 @@ choose_font(owner_hwnd := 0, &output?, style?)
 
     if !DllCall("ReleaseDC", "Ptr", 0, "Ptr", dc)
     {
-        MsgBox "Couldn't release Device Context. The program is terminated", "Error", 16
+        MsgBox "Couldn't release Device Context. The program will be terminate.", "Fatal Error", 16
         ExitApp
     }
-    font_height := -_muldiv(IsSet(style) ? style.height : 12, LOGPIXELY, 72)
+    font_height := -_muldiv(IsSet(output) ? output.height : 12, LOGPIXELY, 72)
 
     offset := NumPut(
         "Int", font_height,
         "Int", 0, ; width (idk)
         "Int", 0, ; escapement (idk)
         "Int", 0, ; orientation (idk)
-        "Int", IsSet(style) ? style.weight : 0,
-        "UChar", IsSet(style) ? style.italic : 0,
-        "UChar", IsSet(style) ? style.underline : 0,
-        "UChar", IsSet(style) ? style.strikethrough : 0,
+        "Int", IsSet(output) ? output.weight : 0,
+        "UChar", IsSet(output) ? output.italic : 0,
+        "UChar", IsSet(output) ? output.underline : 0,
+        "UChar", IsSet(output) ? output.strikethrough : 0,
         "UChar", 0, ; not used
         "UChar", 0, ; not used
         "UChar", 0, ; not used
@@ -199,10 +214,10 @@ choose_font(owner_hwnd := 0, &output?, style?)
         logfont
     ) - logfont.Ptr
 
-    if IsSet(style)
+    if IsSet(output)
     {
         before_offset := offset
-        written_bytes := StrPut(style.typeface, logfont.Ptr + offset, , "UTF-16")
+        written_bytes := StrPut(output.typeface, logfont.Ptr + offset, , "UTF-16")
         NumPut("Char", 0, logfont.ptr + offset + written_bytes)
         written_bytes++
     }
@@ -266,7 +281,7 @@ choose_font(owner_hwnd := 0, &output?, style?)
             MsgBox Format("Error: 0x{:x}`nFont is not chosen.", errno), "Error", 16
         }
 
-        return
+        return output ?? Font()
     }
 
     height := -_rev_muldiv(NumGet(logfont, "Int"), LOGPIXELY, 72)
@@ -276,7 +291,5 @@ choose_font(owner_hwnd := 0, &output?, style?)
     ; strikethrough := NumGet(logfont, 22, "UChar")
     typeface := StrGet(logfont.ptr + 28, , "UTF-16")
 
-    return output := Font.Make(typeface, height, weight, italic, style.underline, style.strikethrough)
+    return output := Font.Make(typeface, height, weight, italic, output.underline, output.strikethrough)
 }
-
-; choose_font(,, Font("Consolas", 18, 700, 1, 1, 1))
