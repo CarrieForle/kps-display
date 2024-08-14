@@ -20,16 +20,17 @@
 #Include "../../format.ahk"
 #Include "../../config.ahk"
 
-number_change(kps_other, kps_text, custom_format, custom_kps, padding, kps_subject, info)
+number_change(kps_other, kps_text, prefix, suffix, custom_format, custom_kps, padding, kps_subject, info)
 {
     kps_other.Value := kps_subject.Value
-    kps_text.Text := custom_format.to_string(kps_subject.Value, custom_kps, padding)
+    kps_text.Text := prefix . custom_format.to_string(kps_subject.Value, custom_kps, padding) . suffix
 }
 
 kps_resize(kps_text, kps_slider, margin, preview_gui, minmax, width, height)
 {
     kps_text.Move(margin[4], margin[1] + 30, width - margin[2] - margin[4], height - margin[1] - margin[3] - 30)
-    kps_slider.Move(,, width - 125)
+    kps_slider.Move(, , width - 125)
+    kps_text.Redraw()
 }
 
 destroy_preview(config_gui, last_pos, last_dimension, preview_gui)
@@ -87,10 +88,13 @@ init_and_show_config_preview_gui(config_gui)
 
     kps_edit := preview_gui.AddEdit("vkps_edit Section X0 Y0 r1 w80 Center Number -WantReturn Limit7", "0")
     kps_updown := preview_gui.AddUpDown("vkps_updown range0-9999999 0x80")
+
     restart_button := preview_gui.AddButton("X+0", "Restart")
     restart_button.SetFont(, "Segoe UI")
+
     kps_slider := preview_gui.AddSlider("vkps_slider X+0 range0-30 AltSubmit NoTicks BackgroundDefault")
-    kps_text := preview_gui.AddText("XS Y30 vkps_text " val.alignment_dropdown, custom_format.to_string(0, config.custom_kps, val.padding_edit))
+
+    kps_text := preview_gui.AddText("XS Y30 vkps_text " val.alignment_dropdown, val.prefix_edit . custom_format.to_string(0, config.custom_kps, val.padding_edit) val.suffix_edit)
     config_gui.style.set(kps_text, RGB.from_string(val.fg_color_edit).to_string())
 
     margin := []
@@ -102,10 +106,10 @@ init_and_show_config_preview_gui(config_gui)
         margin.Push(IsInteger(res) ? res : 0)
     }
 
-    kps_edit.OnEvent("Change", number_change.Bind(kps_slider, kps_text, custom_format, config.custom_kps, val.padding_edit))
-    kps_updown.OnEvent("Change", number_change.Bind(kps_slider, kps_text, custom_format, config.custom_kps, val.padding_edit))
+    kps_edit.OnEvent("Change", number_change.Bind(kps_slider, kps_text, val.prefix_edit, val.suffix_edit, custom_format, config.custom_kps, val.padding_edit))
+    kps_updown.OnEvent("Change", number_change.Bind(kps_slider, kps_text, val.prefix_edit, val.suffix_edit, custom_format, config.custom_kps, val.padding_edit))
     restart_button.OnEvent("Click", restart_preview_gui.Bind(config_gui, last_pos, last_dimension))
-    kps_slider.OnEvent("Change", number_change.Bind(kps_edit, kps_text, custom_format, config.custom_kps, val.padding_edit))
+    kps_slider.OnEvent("Change", number_change.Bind(kps_edit, kps_text, val.prefix_edit, val.suffix_edit, custom_format, config.custom_kps, val.padding_edit))
     preview_gui.OnEvent("Size", kps_resize.Bind(kps_text, kps_slider, [
         val.margin_top_edit,
         val.margin_right_edit,

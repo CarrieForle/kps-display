@@ -231,6 +231,8 @@ get_config_from_gui(config_gui)
         new_config.KPS.style.strikethrough := val.strikethrough_checkbox
         new_config.KPS.align := val.alignment_dropdown
         new_config.KPS.padding := val.padding_edit
+        new_config.KPS.read_prefix(val.prefix_edit)
+        new_config.KPS.read_suffix(val.suffix_edit)
 
         new_config.KPS.format := CustomFormat.from_format(val.format_edit)
         new_config.read_custom_kps_from_listview(config_gui["custom_kps_listview"])
@@ -271,9 +273,9 @@ apply_config_to_config_gui(config, config_gui)
         config_gui["bg_color_edit"].Value := "#" config.KPS.bg_color.to_string()
         config_gui["bg_color_edit"].Opt("Background" config.KPS.bg_color.to_string())
         config_gui["bg_color_edit"].SetFont("c" (config.KPS.bg_color.lum() > 127 ? "000000" : "ffffff"))
-         config_gui["fg_color_edit"].Value := "#" config.KPS.fg_color.to_string()
-         config_gui["fg_color_edit"].Opt("Background" config.KPS.fg_color.to_string())
-         config_gui["fg_color_edit"].SetFont("c" (config.KPS.fg_color.lum() > 127 ? "000000" : "ffffff"))
+        config_gui["fg_color_edit"].Value := "#" config.KPS.fg_color.to_string()
+        config_gui["fg_color_edit"].Opt("Background" config.KPS.fg_color.to_string())
+        config_gui["fg_color_edit"].SetFont("c" (config.KPS.fg_color.lum() > 127 ? "000000" : "ffffff"))
     
         change_text_in_font_edit(config.KPS.style, config_gui["font_preview_edit"])
         change_font_in_font_edit(config.KPS.style, config_gui["font_preview_edit"])
@@ -282,6 +284,8 @@ apply_config_to_config_gui(config, config_gui)
         config_gui["strikethrough_checkbox"].Value := config.KPS.style.strikethrough
         config_gui["alignment_dropdown"].Text := config.KPS.align
         config_gui["format_edit"].Value := config.KPS.format.orig_format
+        config_gui["prefix_edit"].Value := config.KPS.prefix_to_string()
+        config_gui["suffix_edit"].Value := config.KPS.suffix_to_string()
         
         config_gui["custom_kps_listview"].Delete()
         
@@ -559,7 +563,7 @@ init_config_gui(main_gui, config)
     monitored_keys_text := config_gui.AddText("XS", "Monitored keys")
     monitored_keys_invert_checkbox := config_gui.AddCheckBox("vmonitored_keys_invert_checkbox X+M", "Invert")
     monitored_keys_help_picture := config_gui.AddPicture("vmonitored_keys_help_picture X+5 w16 h-1 Icon-24", "Shell32")
-    monitored_keys_edit := config_gui.AddEdit("vmonitored_keys_edit XS r6 w270")
+    monitored_keys_edit := config_gui.AddEdit("vmonitored_keys_edit XS r8 w270")
 
     config_tab.UseTab(2)
     bg_color_text := config_gui.AddText("Section", "Background color")
@@ -628,6 +632,11 @@ init_config_gui(main_gui, config)
     format_edit := config_gui.AddEdit("vformat_edit X+M r1 w200", config.KPS.format.orig_format)
     format_help_picture := config_gui.AddPicture("vformat_help_picture X+5 w16 h-1 Icon-24", "Shell32")
     format_help_picture.OnEvent("Click", show_format_help)
+    prefix_text := config_gui.AddText("XS", "Prefix")
+    prefix_edit := config_gui.AddEdit("vprefix_edit X+M r1 w100", config.KPS.prefix)
+    
+    suffix_text := config_gui.AddText("X+M", "Suffix")
+    suffix_edit := config_gui.AddEdit("vsuffix_edit X+M r1 w100", config.KPS.suffix)
     
     preview_button := config_gui.AddButton("vpreview XS", "Preview")
     preview_button.OnEvent("Click", (button, *) => init_and_show_config_preview_gui(button.Gui))

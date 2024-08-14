@@ -152,6 +152,6 @@ kps_update()
     if prev_char_counts != kps
     {
         prev_char_counts := kps
-        update_kps_text(guis["main"]["kps_text"], config.KPS.format.to_string(kps, config.custom_kps, config.KPS.padding))
+        update_kps_text(guis["main"]["kps_text"], config.KPS.prefix . config.KPS.format.to_string(kps, config.custom_kps, config.KPS.padding) . config.KPS.suffix)
     }
 }

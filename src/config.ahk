@@ -83,6 +83,8 @@ class Configuration
         align := ""
         format := CustomFormat()
         padding := ""
+        prefix := ""
+        suffix := ""
 
         Clone()
         {
@@ -93,6 +95,8 @@ class Configuration
             new_object.align := this.align
             new_object.format := this.format.Clone()
             new_object.padding := this.padding
+            new_object.prefix := this.prefix
+            new_object.suffix := this.suffix
 
             return new_object
         }
@@ -105,9 +109,57 @@ class Configuration
                 this.style.equal(other.style) &&
                 this.align = other.align &&
                 this.format.equal(other.format) &&
-                this.padding == other.padding
+                this.padding == other.padding &&
+                this.prefix == other.prefix &&
+                this.suffix == other.suffix
 
             return res
+        }
+
+        read_prefix(input)
+        {
+            this.prefix := Configuration.KPS._read_prefix_or_suffix(input)
+        }
+
+        read_suffix(input)
+        {
+            this.suffix := Configuration.KPS._read_prefix_or_suffix(input)
+        }
+
+        prefix_to_string()
+        {
+            return this.prefix_to_config()
+        }
+
+        suffix_to_string()
+        {
+            return this.suffix_to_config()
+        }
+
+        prefix_to_config()
+        {
+            return Configuration.KPS._prefix_or_suffix_to_config(this.prefix)
+        }
+        
+        suffix_to_config()
+        {
+            return Configuration.KPS._prefix_or_suffix_to_config(this.suffix)
+        }
+
+        static _read_prefix_or_suffix(input)
+        {
+            result := StrReplace(input, "\n", "`n")
+            result := StrReplace(result, "\\", "\")
+
+            return result
+        }
+
+        static _prefix_or_suffix_to_config(input)
+        {
+            result := StrReplace(input, "\", "\\")
+            result := StrReplace(input, "`n", "\n")
+
+            return result
         }
     }
 
@@ -260,6 +312,8 @@ class Configuration
             result.KPS.align := align
             result.KPS.format := CustomFormat.from_format(better_ini_read(filepath, "KPS", "format"))
             result.KPS.padding := better_ini_read(filepath, "KPS", "padding")
+            result.KPS.read_prefix(better_ini_read(filepath, "KPS", "prefix"))
+            result.KPS.read_suffix(better_ini_read(filepath, "KPS", "suffix"))
 
             parse_custom_kps_state := 0
             kps_key_pairs := []
@@ -338,6 +392,8 @@ class Configuration
         IniWrite this.KPS.align, filepath, "KPS", "align"
         IniWrite this.KPS.format.orig_format, filepath, "KPS", "format"
         IniWrite this.KPS.padding, filepath, "KPS", "padding"
+        IniWrite this.KPS.prefix_to_config(), filepath, "KPS", "prefix"
+        IniWrite this.KPS.suffix_to_config(), filepath, "KPS", "suffix"
 
         for kps, kps_text in this.custom_kps
         {

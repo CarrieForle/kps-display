@@ -20,17 +20,21 @@
 #Include "gui.ahk"
 #Include "../main.ahk"
 
-apply_config_to_main_gui(main_gui, config)
+apply_config_to_main_gui(main_gui, config, is_not_init := true)
 {
     config.KPS.style.set(main_gui["kps_text"], config.KPS.fg_color.to_string())
-    main_gui["kps_text"].Text := config.KPS.format.to_string(0, config.custom_kps, config.KPS.padding)
+    main_gui["kps_text"].Text := config.KPS.prefix . config.KPS.format.to_string(0, config.custom_kps, config.KPS.padding) . config.KPS.suffix
     main_gui.BackColor := config.KPS.bg_color.to_string()
     main_gui["kps_text"].Opt(config.KPS.align)
     
     margin := config.general.margin
 
     main_gui["kps_text"].Move(margin[4], margin[1], main_gui.size[1] - margin[2] - margin[4], main_gui.size[2] - margin[1] - margin[3])
-    update_context_menu(init_guis(0, 0), main_gui, config, main_gui.context_menu)
+
+    if is_not_init
+    {
+        update_context_menu(init_guis(0, 0), main_gui, config, main_gui.context_menu)
+    }
 }
 
 show_option(option_menu, guiObj, guiCtrlObj, item, isRightClick, x, y)
@@ -78,19 +82,14 @@ init_main_gui(config, context_menu, dimension)
     main_gui := Gui("Resize", "KPS Display")
 
     main_gui.size := dimension
-    main_gui.context_menu := context_menu
     main_gui.Title := "KPS Display"
-    main_gui.BackColor := config.KPS.bg_color.to_string()
 
     main_gui.OnEvent("Close", close_main_gui)
     main_gui.OnEvent("ContextMenu", show_option.Bind(context_menu))
 
-    kps_text := main_gui.AddText("vkps_text " config.KPS.align " w" dimension[1] " h" dimension[2], config.KPS.format.to_string(0, config.custom_kps, config.KPS.padding))
-    config.KPS.style.set(kps_text, config.KPS.fg_color.to_string())
-    
-    margin := config.general.margin
+    kps_text := main_gui.AddText("vkps_text", "0")
 
-    kps_text.Move(margin[4], margin[1], main_gui.size[1] - margin[2] - margin[4], main_gui.size[2] - margin[1] - margin[3])
+    apply_config_to_main_gui(main_gui, config, false)
     
     return main_gui
 }

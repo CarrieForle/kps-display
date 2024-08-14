@@ -104,15 +104,6 @@ init_guis(config, dimension)
         guis["main"] := main_gui
 
         update_context_menu(guis, main_gui, config, context_menu)
-
-        ; context_menu.Add(config_gui_name(), spawn_gui_from_context.Bind(guis, main_gui, config, init_config_gui))
-
-        ; context_menu.Add(about_gui_name(), spawn_gui_from_context.Bind(guis, main_gui, config, init_about_gui))
-
-        filename := 0
-        SplitPath config.filepath, &filename
-        context_menu.Add("Load profile (" filename ")", load_config_from_context_menu.Bind(main_gui, config))
-        context_menu.Add("Show profile location", show_config_in_explorer.Bind(config.filepath))
         
         main_gui.Show()
         main_gui.Opt("-Disabled")
