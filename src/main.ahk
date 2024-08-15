@@ -48,10 +48,10 @@ onKeyUp(input_hook, vk, sc)
     }
 }
 
-prev_char_counts := 0
 char_creation_ticks := []
 hold_char_creation_ticks := []
 PER_SECOND := 1000
+max_cached_kps := 100
 
 try
 {
@@ -128,30 +128,67 @@ transmit_config_to_event_loop(new_config)
     global config
     config := new_config
     config.general.monitored_keys.transform(input_hook)
+    update_texts()
+
     SetTimer kps_update, config.general.update_interval
 }
 
-guis := init_guis(config, dimension)
+update_texts()
+{
+    Critical
 
+    global texts
+    texts := []
+
+    loop max_cached_kps + 1
+    {
+        texts.Push(config.KPS.format.to_string(A_Index - 1, config.custom_kps, config.KPS.padding))
+    }
+}
+
+guis := init_guis(config, dimension)
 guis["main"].OnEvent("Size", _real_resize.Bind(&config))
-guis["main"].Show("w" dimension[1] "h" dimension[2])
+kps_text := guis["main"]["kps_text"]
+
+guis["main"].Show("w" dimension[1] " h" dimension[2] " Center")
+guis["main"].Opt("-Disabled")
+kps_text.Enabled := false
+kps_text.Enabled := true
+
+kps := 0
+texts := []
+update_texts()
 
 SetTimer kps_update, config.general.update_interval
+
+ukt()
+{
+    if kps <= max_cached_kps
+    {
+        kps_text.Text := texts[kps + 1]
+    }
+    else
+    {
+        kps_text.Text := config.KPS.format.to_string(kps, config.custom_kps, config.KPS.padding)
+    }
+}
     
 kps_update()
 {
-    global prev_char_counts
+    Critical
+
+    global kps
 
     while char_creation_ticks.Length > 0 && A_TickCount - char_creation_ticks[1] > PER_SECOND
     {
         char_creation_ticks.RemoveAt(1)
     }
 
-    kps := char_creation_ticks.Length
+    l := char_creation_ticks.Length
     
-    if prev_char_counts != kps
+    if kps != l
     {
-        prev_char_counts := kps
-        update_kps_text(guis["main"]["kps_text"], config.KPS.prefix . config.KPS.format.to_string(kps, config.custom_kps, config.KPS.padding) . config.KPS.suffix)
+        kps := l
+        ukt
     }
 }

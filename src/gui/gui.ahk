@@ -104,11 +104,6 @@ init_guis(config, dimension)
         guis["main"] := main_gui
 
         update_context_menu(guis, main_gui, config, context_menu)
-        
-        main_gui.Show()
-        main_gui.Opt("-Disabled")
-        main_gui["kps_text"].Enabled := false
-        main_gui["kps_text"].Enabled := true
 
         OnMessage 0x0200, show_tooltip
 

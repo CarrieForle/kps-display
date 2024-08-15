@@ -231,17 +231,13 @@ get_config_from_gui(config_gui)
         new_config.KPS.style.strikethrough := val.strikethrough_checkbox
         new_config.KPS.align := val.alignment_dropdown
         new_config.KPS.padding := val.padding_edit
-        new_config.KPS.read_prefix(val.prefix_edit)
-        new_config.KPS.read_suffix(val.suffix_edit)
 
         new_config.KPS.format := CustomFormat.from_format(val.format_edit)
         new_config.read_custom_kps_from_listview(config_gui["custom_kps_listview"])
 
-        new_config.general.margin := [
-            Integer(val.margin_top_edit),
-            Integer(val.margin_right_edit),
-            Integer(val.margin_bottom_edit),
-            Integer(val.margin_left_edit),
+        new_config.general.offsets := [
+            Integer(val.offset_horizontal_edit),
+            Integer(val.offset_vertical_edit),
         ]
 
         return new_config
@@ -270,12 +266,15 @@ apply_config_to_config_gui(config, config_gui)
         config_gui["monitored_keys_edit"].Value := config.general.monitored_keys.to_gui()
         config_gui["monitored_keys_invert_checkbox"].Value := config.general.monitored_keys.params[2] = "-N"
         config_gui["padding_edit"].Value := config.KPS.padding
-        config_gui["bg_color_edit"].Value := "#" config.KPS.bg_color.to_string()
-        config_gui["bg_color_edit"].Opt("Background" config.KPS.bg_color.to_string())
-        config_gui["bg_color_edit"].SetFont("c" (config.KPS.bg_color.lum() > 127 ? "000000" : "ffffff"))
-        config_gui["fg_color_edit"].Value := "#" config.KPS.fg_color.to_string()
-        config_gui["fg_color_edit"].Opt("Background" config.KPS.fg_color.to_string())
-        config_gui["fg_color_edit"].SetFont("c" (config.KPS.fg_color.lum() > 127 ? "000000" : "ffffff"))
+
+        for color_type in ["bg", "fg"]
+        {
+            color := config.KPS.%color_type "_color"%
+
+            config_gui[color_type "_color_edit"].Value := "#" color.to_string()
+            config_gui[color_type "_color_edit"].Opt("Background" color.to_string())
+            config_gui[color_type "_color_edit"].SetFont("c" (color.lum() > 127 ? "000000" : "ffffff"))
+        }
     
         change_text_in_font_edit(config.KPS.style, config_gui["font_preview_edit"])
         change_font_in_font_edit(config.KPS.style, config_gui["font_preview_edit"])
@@ -284,8 +283,6 @@ apply_config_to_config_gui(config, config_gui)
         config_gui["strikethrough_checkbox"].Value := config.KPS.style.strikethrough
         config_gui["alignment_dropdown"].Text := config.KPS.align
         config_gui["format_edit"].Value := config.KPS.format.orig_format
-        config_gui["prefix_edit"].Value := config.KPS.prefix_to_string()
-        config_gui["suffix_edit"].Value := config.KPS.suffix_to_string()
         
         config_gui["custom_kps_listview"].Delete()
         
@@ -296,9 +293,9 @@ apply_config_to_config_gui(config, config_gui)
             
         config_gui["update_interval_edit"].Value := config.general.update_interval
 
-        for name in ["top", "right", "bottom", "left"]
+        for name in ["horizontal", "vertical"]
         {
-            config_gui["margin_" name "_edit"].Value := config.general.margin[A_Index]
+            config_gui["offset_" name "_edit"].Value := config.general.offsets[A_Index]
         }
     }
     catch Error as e
@@ -311,12 +308,21 @@ quit_config(main_gui, condition, &config, gui_ctrl_obj, *)
 {
     gui_ctrl_obj.Gui.Opt("+OwnDialogs")
 
-    if !condition() && "No" = MsgBox("You have unsaved changes. Do you want to lose your works?", "Discard current works?", 0x134)
+    if !condition()
     {
-        return
-    }
+        res := MsgBox("You have unsaved changes. Do you want to save it?", "Save profile", 0x33)
 
-    if gui_ctrl_obj.Gui.has_made_change
+        switch res
+        {
+            case "Cancel":
+                return
+            case "Yes":
+                save_config_and_quit(main_gui, &config, gui_ctrl_obj)
+            case "No":
+                enable_main_and_destroy_self(main_gui, gui_ctrl_obj.Gui)
+        }
+    }
+    else if gui_ctrl_obj.Gui.has_made_change
     {
         enable_main_and_destroy_self(main_gui, gui_ctrl_obj.Gui, config)
     }
@@ -632,11 +638,6 @@ init_config_gui(main_gui, config)
     format_edit := config_gui.AddEdit("vformat_edit X+M r1 w200", config.KPS.format.orig_format)
     format_help_picture := config_gui.AddPicture("vformat_help_picture X+5 w16 h-1 Icon-24", "Shell32")
     format_help_picture.OnEvent("Click", show_format_help)
-    prefix_text := config_gui.AddText("XS", "Prefix")
-    prefix_edit := config_gui.AddEdit("vprefix_edit X+M r1 w100", config.KPS.prefix)
-    
-    suffix_text := config_gui.AddText("X+M", "Suffix")
-    suffix_edit := config_gui.AddEdit("vsuffix_edit X+M r1 w100", config.KPS.suffix)
     
     preview_button := config_gui.AddButton("vpreview XS", "Preview")
     preview_button.OnEvent("Click", (button, *) => init_and_show_config_preview_gui(button.Gui))
@@ -682,31 +683,20 @@ init_config_gui(main_gui, config)
 
     update_interval_edit.OnEvent("Change", verify.Bind(is_positive, "[Advanced: Update interval]`n{}"))
 
-    margin_groupbox := config_gui.AddGroupBox("XS w287 h100", "Margin")
+    offsets_groupbox := config_gui.AddGroupBox("XS w287 h100", "Offsets")
+    offsets_help_picture := config_gui.AddPicture("voffsets_help_picture XP50 YP w16 h-1 Icon-24", "Shell32")
 
-    margin_top_text := config_gui.AddText("Section XS+10 YS+55", "Top")
-    margin_top_edit := config_gui.AddEdit("vmargin_top_edit X+m r1 w80 -WantReturn Limit6")
-    margin_top_updown := config_gui.AddUpDown("vmargin_top_updown +0x80 Range-99999-999999")
-    margin_top_edit.error_picture := config_gui.AddPicture("X+5 w16 h-1 Hidden Icon-161", "Shell32")
-    margin_top_edit.OnEvent("Change", verify.Bind(is_number, "[Advanced: Top margin]`n{}"))
+    offset_vertical_text := config_gui.AddText("Section XS+10 YS+55", "Vertical")
+    offset_vertical_edit := config_gui.AddEdit("voffset_vertical_edit X+m r1 w80 -WantReturn Limit6")
+    offset_vertical_updown := config_gui.AddUpDown("voffset_vertical_updown +0x80 Range-99999-999999")
+    offset_vertical_edit.error_picture := config_gui.AddPicture("X+5 w16 h-1 Hidden Icon-161", "Shell32")
+    offset_vertical_edit.OnEvent("Change", verify.Bind(is_number, "[Advanced: Vertical offset]`n{}"))
     
-    margin_right_text := config_gui.AddText("X+M", "Right")
-    margin_right_edit := config_gui.AddEdit("vmargin_right_edit X+m r1 w60 -WantReturn Limit6")
-    margin_right_updown := config_gui.AddUpDown("vmargin_right_updown +0x80 Range-99999-999999")
-    margin_right_edit.error_picture := config_gui.AddPicture("X+5 w16 h-1 Hidden Icon-161", "Shell32")
-    margin_right_edit.OnEvent("Change", verify.Bind(is_number, "[Advanced: Right margin]`n{}"))
-    
-    margin_bottom_text := config_gui.AddText("XS Y+20", "Bottom")
-    margin_bottom_edit := config_gui.AddEdit("vmargin_bottom_edit X+M r1 w60 -WantReturn Limit6")
-    margin_bottom_updown := config_gui.AddUpDown("vmargin_bottom_updown +0x80 Range-99999-999999")
-    margin_bottom_edit.error_picture := config_gui.AddPicture("X+5 w16 h-1 Hidden Icon-161", "Shell32")
-    margin_bottom_edit.OnEvent("Change", verify.Bind(is_number, "[Advanced: Bottom margin]`n{}"))
-    
-    margin_left_text := config_gui.AddText("X+M", "Left")
-    margin_left_edit := config_gui.AddEdit("vmargin_left_edit X+m r1 w68 -WantReturn Limit6")
-    margin_left_updown := config_gui.AddUpDown("vmargin_left_updown +0x80 Range-99999-999999")
-    margin_left_edit.error_picture := config_gui.AddPicture("X+5 w16 h-1 Hidden Icon-161", "Shell32")
-    margin_left_edit.OnEvent("Change", verify.Bind(is_number, "[Advanced: Left margin]`n{}"))
+    offset_horizontal_text := config_gui.AddText("XS YS+37", "Horizontal")
+    offset_horizontal_edit := config_gui.AddEdit("voffset_horizontal_edit X+m r1 w60 -WantReturn Limit6")
+    offset_horizontal_updown := config_gui.AddUpDown("voffset_horizontal_updown +0x80 Range-99999-999999")
+    offset_horizontal_edit.error_picture := config_gui.AddPicture("X+5 w16 h-1 Hidden Icon-161", "Shell32")
+    offset_horizontal_edit.OnEvent("Change", verify.Bind(is_number, "[Advanced: Horizontal offset]`n{}"))
         
     config_tab.UseTab(0)
     save_and_quit_button := config_gui.AddButton("vsave_and_quit_button", "Save && Quit")

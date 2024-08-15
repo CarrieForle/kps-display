@@ -20,16 +20,33 @@
 #Include "../../format.ahk"
 #Include "../../config.ahk"
 
-number_change(kps_other, kps_text, prefix, suffix, custom_format, custom_kps, padding, kps_subject, info)
+number_change(kps_other, kps_text, custom_format, custom_kps, padding, kps_subject, info)
 {
     kps_other.Value := kps_subject.Value
-    kps_text.Text := prefix . custom_format.to_string(kps_subject.Value, custom_kps, padding) . suffix
+    kps_text.Text := custom_format.to_string(kps_subject.Value, custom_kps, padding)
 }
 
-kps_resize(kps_text, kps_slider, margin, preview_gui, minmax, width, height)
+kps_resize(kps_text, kps_slider, align, offsets, preview_gui, minmax, width, height)
 {
-    kps_text.Move(margin[4], margin[1] + 30, width - margin[2] - margin[4], height - margin[1] - margin[3] - 30)
+    static last_width := 0
+    
+    if last_width = width
+    {
+        return
+    }
+
     kps_slider.Move(, , width - 125)
+
+    if align = "Center"
+    {
+        kps_text.Move(offsets[1] - (A_ScreenWidth - width) // 2, offsets[2])
+    }
+    else
+    {
+        kps_text.Move(offsets[1] - A_ScreenWidth + width, offsets[2])
+    }
+
+    last_width := width
     kps_text.Redraw()
 }
 
@@ -75,15 +92,20 @@ init_and_show_config_preview_gui(config_gui)
     preview_gui.Title := "Preview"
     hwnd := preview_gui.Hwnd
 
-    res := 0
+    offsets := []
+
+    for text in ["horizontal", "vertical"]
+    {
+        res := val.%"offset_" text "_edit"%
+        offsets.Push(IsInteger(res) ? Integer(res) : 0)
+    }
+
+    kps_text := preview_gui.AddText("vkps_text -Wrap X0 Y" 30 + offsets[2] " w" A_ScreenWidth " h" A_ScreenHeight " " val.alignment_dropdown, custom_format.to_string(0, config.custom_kps, val.padding_edit))
+    config_gui.style.set(kps_text, RGB.from_string(val.fg_color_edit).to_string())
 
     try
     {
-        preview_gui.BackColor := RGB.from_string(val.bg_color_edit).to_string()
-    }
-    catch
-    {
-        preview_gui.BackColor := "default"
+        kps_text.Opt("Background" RGB.from_string(val.bg_color_edit).to_string())
     }
 
     kps_edit := preview_gui.AddEdit("vkps_edit Section X0 Y0 r1 w80 Center Number -WantReturn Limit7", "0")
@@ -92,30 +114,17 @@ init_and_show_config_preview_gui(config_gui)
     restart_button := preview_gui.AddButton("X+0", "Restart")
     restart_button.SetFont(, "Segoe UI")
 
-    kps_slider := preview_gui.AddSlider("vkps_slider X+0 range0-30 AltSubmit NoTicks BackgroundDefault")
+    kps_slider := preview_gui.AddSlider("vkps_slider X+0 range0-50 AltSubmit NoTicks BackgroundDefault")
 
-    kps_text := preview_gui.AddText("XS Y30 vkps_text " val.alignment_dropdown, val.prefix_edit . custom_format.to_string(0, config.custom_kps, val.padding_edit) val.suffix_edit)
-    config_gui.style.set(kps_text, RGB.from_string(val.fg_color_edit).to_string())
-
-    margin := []
-
-    for text in ["top", "right", "bottom", "left"]
-    {
-        res := val.%"margin_" text "_edit"%
-            
-        margin.Push(IsInteger(res) ? res : 0)
-    }
-
-    kps_edit.OnEvent("Change", number_change.Bind(kps_slider, kps_text, val.prefix_edit, val.suffix_edit, custom_format, config.custom_kps, val.padding_edit))
-    kps_updown.OnEvent("Change", number_change.Bind(kps_slider, kps_text, val.prefix_edit, val.suffix_edit, custom_format, config.custom_kps, val.padding_edit))
+    kps_edit.OnEvent("Change", number_change.Bind(kps_slider, kps_text, custom_format, config.custom_kps, val.padding_edit))
+    kps_updown.OnEvent("Change", number_change.Bind(kps_slider, kps_text, custom_format, config.custom_kps, val.padding_edit))
     restart_button.OnEvent("Click", restart_preview_gui.Bind(config_gui, last_pos, last_dimension))
-    kps_slider.OnEvent("Change", number_change.Bind(kps_edit, kps_text, val.prefix_edit, val.suffix_edit, custom_format, config.custom_kps, val.padding_edit))
-    preview_gui.OnEvent("Size", kps_resize.Bind(kps_text, kps_slider, [
-        val.margin_top_edit,
-        val.margin_right_edit,
-        val.margin_bottom_edit,
-        val.margin_left_edit
-    ]))
+    kps_slider.OnEvent("Change", number_change.Bind(kps_edit, kps_text, custom_format, config.custom_kps, val.padding_edit))
+
+    if val.alignment_dropdown != "Left"
+    {
+        preview_gui.OnEvent("Size", kps_resize.Bind(kps_text, kps_slider, val.alignment_dropdown, offsets))
+    }
 
     preview_gui.OnEvent("Close", destroy_preview.Bind(config_gui, last_pos, last_dimension))
     

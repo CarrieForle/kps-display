@@ -53,14 +53,14 @@ class Configuration
     {
         update_interval := 0
         monitored_keys := MonitoredKeys()
-        margin := [0, 0, 0, 0]
+        offsets := [0, 0]
 
         Clone()
         {
             new_object := Configuration.General()
             new_object.update_interval := this.update_interval
             new_object.monitored_keys := this.monitored_keys.Clone()
-            new_object.margin := this.margin.Clone()
+            new_object.offsets := this.offsets.Clone()
 
             return new_object
         }
@@ -69,7 +69,7 @@ class Configuration
         {
             res := this.update_interval = other.update_interval &&
                 this.monitored_keys.equal(other.monitored_keys) &&
-                array_equal(this.margin, other.margin)
+                array_equal(this.offsets, other.offsets)
             
             return res
         }
@@ -83,8 +83,6 @@ class Configuration
         align := ""
         format := CustomFormat()
         padding := ""
-        prefix := ""
-        suffix := ""
 
         Clone()
         {
@@ -95,8 +93,6 @@ class Configuration
             new_object.align := this.align
             new_object.format := this.format.Clone()
             new_object.padding := this.padding
-            new_object.prefix := this.prefix
-            new_object.suffix := this.suffix
 
             return new_object
         }
@@ -109,57 +105,9 @@ class Configuration
                 this.style.equal(other.style) &&
                 this.align = other.align &&
                 this.format.equal(other.format) &&
-                this.padding == other.padding &&
-                this.prefix == other.prefix &&
-                this.suffix == other.suffix
+                this.padding == other.padding
 
             return res
-        }
-
-        read_prefix(input)
-        {
-            this.prefix := Configuration.KPS._read_prefix_or_suffix(input)
-        }
-
-        read_suffix(input)
-        {
-            this.suffix := Configuration.KPS._read_prefix_or_suffix(input)
-        }
-
-        prefix_to_string()
-        {
-            return this.prefix_to_config()
-        }
-
-        suffix_to_string()
-        {
-            return this.suffix_to_config()
-        }
-
-        prefix_to_config()
-        {
-            return Configuration.KPS._prefix_or_suffix_to_config(this.prefix)
-        }
-        
-        suffix_to_config()
-        {
-            return Configuration.KPS._prefix_or_suffix_to_config(this.suffix)
-        }
-
-        static _read_prefix_or_suffix(input)
-        {
-            result := StrReplace(input, "\n", "`n")
-            result := StrReplace(result, "\\", "\")
-
-            return result
-        }
-
-        static _prefix_or_suffix_to_config(input)
-        {
-            result := StrReplace(input, "\", "\\")
-            result := StrReplace(input, "`n", "\n")
-
-            return result
         }
     }
 
@@ -272,9 +220,9 @@ class Configuration
             result.general.update_interval := update_interval
             result.general.monitored_keys := MonitoredKeys.from_config(better_ini_read(filepath, "general", "monitored_keys"))
 
-            margin := []
+            offsets := []
 
-            for m in StrSplit(better_ini_read(filepath, "general", "margin"), A_Space)
+            for m in StrSplit(better_ini_read(filepath, "general", "offsets"), A_Space)
             {
                 if StrLen(m) = 0
                 {
@@ -283,19 +231,23 @@ class Configuration
 
                 if !IsInteger(m)
                 {
-                    throw ConfigParseError(update_interval " is not an integer (margin in [general])")
+                    throw ConfigParseError(m " is not an integer (offsets in [general])")
                 }
 
-                margin.Push(Integer(m))
+                offsets.Push(Integer(m))
             }
 
-            if margin.length = 4
+            if offsets.length = 2
             {
-                result.general.margin := margin
+                result.general.offsets := offsets
             }
-            else if margin.length > 0
+            else if offsets.length = 0
             {
-                ConfigParseError("Expected 4 number in margin but got " margin.Length " (margin in [general])")
+                result.general.offsets := [0, 0]
+            }
+            else
+            {
+                ConfigParseError("Expected 2 number in offsets but got " offsets.Length " (offsets in [general])")
             }
 
             result.KPS.bg_color := RGB.from_string(better_ini_read(filepath, "KPS", "bg_color"))
@@ -312,8 +264,6 @@ class Configuration
             result.KPS.align := align
             result.KPS.format := CustomFormat.from_format(better_ini_read(filepath, "KPS", "format"))
             result.KPS.padding := better_ini_read(filepath, "KPS", "padding")
-            result.KPS.read_prefix(better_ini_read(filepath, "KPS", "prefix"))
-            result.KPS.read_suffix(better_ini_read(filepath, "KPS", "suffix"))
 
             parse_custom_kps_state := 0
             kps_key_pairs := []
@@ -385,15 +335,13 @@ class Configuration
 
         IniWrite this.general.update_interval, filepath, "general", "update_interval"
         IniWrite this.general.monitored_keys.to_config(), filepath, "general", "monitored_keys"
-        IniWrite join_array(this.general.margin), filepath, "general", "margin"
+        IniWrite join_array(this.general.offsets), filepath, "general", "offsets"
         IniWrite this.KPS.bg_color.to_config(), filepath, "KPS", "bg_color"
         IniWrite this.KPS.fg_color.to_config(), filepath, "KPS", "fg_color"
         IniWrite this.KPS.style.to_config(), filepath, "KPS", "style"
         IniWrite this.KPS.align, filepath, "KPS", "align"
         IniWrite this.KPS.format.orig_format, filepath, "KPS", "format"
         IniWrite this.KPS.padding, filepath, "KPS", "padding"
-        IniWrite this.KPS.prefix_to_config(), filepath, "KPS", "prefix"
-        IniWrite this.KPS.suffix_to_config(), filepath, "KPS", "suffix"
 
         for kps, kps_text in this.custom_kps
         {

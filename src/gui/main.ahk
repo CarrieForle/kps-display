@@ -23,13 +23,22 @@
 apply_config_to_main_gui(main_gui, config, is_not_init := true)
 {
     config.KPS.style.set(main_gui["kps_text"], config.KPS.fg_color.to_string())
-    main_gui["kps_text"].Text := config.KPS.prefix . config.KPS.format.to_string(0, config.custom_kps, config.KPS.padding) . config.KPS.suffix
+    main_gui["kps_text"].Text := config.KPS.format.to_string(0, config.custom_kps, config.KPS.padding)
     main_gui.BackColor := config.KPS.bg_color.to_string()
     main_gui["kps_text"].Opt(config.KPS.align)
-    
-    margin := config.general.margin
 
-    main_gui["kps_text"].Move(margin[4], margin[1], main_gui.size[1] - margin[2] - margin[4], main_gui.size[2] - margin[1] - margin[3])
+    if config.KPS.align = "Center"
+    {
+        main_gui["kps_text"].Move(config.general.offsets[1] - (A_ScreenWidth - main_gui.size[1]) // 2, config.general.offsets[2])
+    }
+    else if config.KPS.align = "Right"
+    {
+        main_gui["kps_text"].Move(config.general.offsets[1] - A_ScreenWidth + main_gui.size[1], config.general.offsets[2])
+    }
+    else
+    {
+        main_gui["kps_text"].Move(config.general.offsets[1], config.general.offsets[2])
+    }
 
     if is_not_init
     {
@@ -46,20 +55,51 @@ show_option(option_menu, guiObj, guiCtrlObj, item, isRightClick, x, y)
 
 _real_resize(&config, gui_obj, minmax, width, height)
 {
-    if minmax = -1
+    static last_minmax := -1
+    static last_align := 0
+    static last_width := 0
+
+    if last_minmax != minmax
     {
-        SetTimer kps_update, 0
+        if minmax = -1
+        {
+            SetTimer kps_update, 0
+        }
+        else
+        {
+            SetTimer kps_update, config.general.update_interval
+        }
+
+        last_minmax := minmax
+    }
+
+    if last_align = "Left" && config.KPS.align = "Left" || last_width = width
+    {
+        gui_obj.size := [width, height]
+
+        return
+    }
+
+    offsets := config.general.offsets
+    kps_text := gui_obj["kps_text"]
+
+    if config.KPS.align = "Center"
+    {
+        kps_text.Move(offsets[1] - (A_ScreenWidth - width) // 2, offsets[2])
+    }
+    else if config.KPS.align = "Right"
+    {
+        kps_text.Move(offsets[1] - A_ScreenWidth + width, offsets[2])
     }
     else
     {
-        SetTimer kps_update, config.general.update_interval
-        margin := config.general.margin
-        kps_text := gui_obj["kps_text"]
-        kps_text.Move(margin[4], margin[1], width - margin[2] - margin[4], height - margin[1] - margin[3])
-        gui_obj.size := [width, height]
-
-        kps_text.Redraw()
+        kps_text.Move(offsets[1], offsets[2])
     }
+
+    last_align := config.KPS.align
+    last_width := width
+    gui_obj.size := [width, height]
+    kps_text.Redraw()
 }
 
 enable_main_and_destroy_self(main_gui, orig_gui, config?)
@@ -95,17 +135,9 @@ init_main_gui(config, context_menu, dimension)
     main_gui.OnEvent("Close", close_main_gui)
     main_gui.OnEvent("ContextMenu", show_option.Bind(context_menu))
 
-    kps_text := main_gui.AddText("vkps_text", "0")
+    kps_text := main_gui.AddText("vkps_text -Wrap w" A_ScreenWidth " h" A_ScreenHeight, "0")
 
     apply_config_to_main_gui(main_gui, config, false)
     
     return main_gui
-}
-
-update_kps_text(kps_text, kps_other_text)
-{
-    if kps_text.Value != kps_other_text
-    {
-        kps_text.Value := kps_other_text
-    }
 }
