@@ -1,6 +1,6 @@
 ## KPS (key per second) Display
 
-A customizable display program to show key per second in real-time on Windows.
+A customizable display program to show key-per-second in real-time on Windows.
 
 The program is intended to be window-captured by screen recording / streaming softwares like OBS, alongside with real-time keyboard display program like [NohBoard](https://github.com/ThoNohT/NohBoard/).
 
