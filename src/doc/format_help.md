@@ -35,7 +35,7 @@ The **flags** and **width** can be optionally used inside the placeholders. You 
 - `-` flag left aligns KPS. (By default KPS is right-aligned)  
 - `0` flag pads with 0. 
 - `=` flag pads with custom padding. 
-- 
+
 If `-` flag is present, it **must** be specified in front of all the other flags.  
 
 if `=` flag is present, `0` flag must not be used and width is not supported.
