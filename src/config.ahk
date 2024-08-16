@@ -343,10 +343,17 @@ class Configuration
         IniWrite this.KPS.format.orig_format, filepath, "KPS", "format"
         IniWrite this.KPS.padding, filepath, "KPS", "padding"
 
-        for kps, kps_text in this.custom_kps
+        if this.custom_kps.Count = 0
         {
-            ; val does not trim; key Ltrim-ed
-            IniWrite kps_text, filepath, "custom_KPS", kps
+            FileAppend "[custom_KPS]`n", filepath, "UTF-16"
+        }
+        else
+        {
+            for kps, kps_text in this.custom_kps
+            {
+                ; val does not trim; key Ltrim-ed
+                IniWrite kps_text, filepath, "custom_KPS", kps
+            }
         }
     }
 }

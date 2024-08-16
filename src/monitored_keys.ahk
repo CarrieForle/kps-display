@@ -123,7 +123,11 @@ class MonitoredKeys
     {
         if this.params[2] = "-N"
         {
-            ih.KeyOpt("{All}", "N")
+            ih.KeyOpt("{All}", "+N")
+        }
+        else
+        {
+            ih.KeyOpt("{All}", "-N")
         }
 
         ih.KeyOpt(this.params*)

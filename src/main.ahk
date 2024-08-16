@@ -107,7 +107,7 @@ catch ConfigParseError as e
         }
         catch Error as e
         {
-            unrecoverable_error(e)
+            unknown_error(e)
         }
     }
 }
@@ -129,8 +129,7 @@ transmit_config_to_event_loop(new_config)
     config := new_config
     config.general.monitored_keys.transform(input_hook)
     update_texts()
-
-    SetTimer kps_update, config.general.update_interval
+    toggle_kps_update(true)
 }
 
 update_texts()
@@ -143,6 +142,17 @@ update_texts()
     loop max_cached_kps + 1
     {
         texts.Push(config.KPS.format.to_string(A_Index - 1, config.custom_kps, config.KPS.padding))
+    }
+}
+
+toggle_kps_update(toggle)
+{
+    if toggle
+    {
+        SetTimer kps_update, config.general.update_interval
+    } else
+    {
+        SetTimer kps_update, 0
     }
 }
 
@@ -159,13 +169,16 @@ kps := 0
 texts := []
 update_texts()
 
-SetTimer kps_update, config.general.update_interval
+toggle_kps_update(true)
 
 ukt()
 {
+    Critical
+
     if kps <= max_cached_kps
     {
         kps_text.Text := texts[kps + 1]
+        Sleep -1
     }
     else
     {

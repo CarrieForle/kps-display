@@ -64,7 +64,7 @@ join_array(arr, sep := A_Space)
     return SubStr(res, 2)
 }
 
-unrecoverable_error(err)
+unknown_error(err)
 {
     MsgBox "Error: " err.Message "(" err.What ", " err.Extra ") `nThe application will terminate.`nPlease report it to the developers. Thank you.", "Fatal Error", 16
     ExitApp

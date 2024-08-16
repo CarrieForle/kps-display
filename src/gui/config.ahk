@@ -25,8 +25,6 @@
 #Include "config/custom_kps.ahk"
 #Include "config/preview.ahk"
 
-; TODO make a function to apply a GUI control (presumable a box of solid color) to preview color in config window
-
 config_gui_name()
 {
     return "Configure"
@@ -34,7 +32,7 @@ config_gui_name()
 
 change_text_in_font_edit(my_font, font_edit, *)
 {
-    font_str := StrTitle(my_font.typeface) ", " my_font.height "pt"
+    font_str := my_font.typeface ", " my_font.height "pt"
 
     switch my_font.weight
     {
@@ -244,7 +242,7 @@ get_config_from_gui(config_gui)
     }
     catch Error as e
     {
-        unrecoverable_error(e)
+        unknown_error(e)
     }
 }
 
@@ -300,7 +298,7 @@ apply_config_to_config_gui(config, config_gui)
     }
     catch Error as e
     {
-        unrecoverable_error(e)
+        unknown_error(e)
     }
 }
 
@@ -714,8 +712,6 @@ init_config_gui(main_gui, config)
         ok_and_saved.Bind(config_gui, &config),
         &config
     ))
-
-    dbg_button.OnEvent("Click", (*) => config.export("_dbg.ini"))
     
     apply_config_to_config_gui(config, config_gui)
 

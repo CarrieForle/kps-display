@@ -43,13 +43,13 @@ class Font
     {
         config_font := Font()
         is_weight_specified := false
-        style_str := StrUpper(style_str)
 
         Loop Parse style_str, ",", A_Space A_Tab
         {
             match := true
+            normalized_token := StrUpper(A_LoopField)
 
-            switch A_LoopField
+            switch normalized_token
             {
                 case "BOLD":
                     if !is_weight_specified
@@ -79,7 +79,7 @@ class Font
                 continue
             }
 
-            if RegExMatch(A_LoopField, "^S(\d+)$", &match)
+            if RegExMatch(normalized_token, "^S(\d+)$", &match)
             {
                 height := Integer(match[1])
 
@@ -90,7 +90,7 @@ class Font
 
                 config_font.height := height
             }
-            else if RegExMatch(A_LoopField, "^W(\d+)$", &match)
+            else if RegExMatch(normalized_token, "^W(\d+)$", &match)
             {
                 weight := Integer(match[1])
 
@@ -113,7 +113,7 @@ class Font
 
     to_config()
     {
-        result := StrTitle(this.typeface) ", s" this.height
+        result := this.typeface ", s" this.height
         
         switch this.weight
         {
@@ -248,10 +248,10 @@ choose_font(owner_hwnd := 0, &output?)
             "Int", 0, ; padding
             tag_choose_font
     }
-    ; TODO: Test on 32-bit
+
     else
     {
-        tag_choose_font := Buffer(92)
+        tag_choose_font := Buffer(60)
 
         NumPut "UInt", tag_choose_font.Size,
             "Ptr", owner_hwnd,
@@ -272,7 +272,7 @@ choose_font(owner_hwnd := 0, &output?)
             tag_choose_font
     }
 
-    result := DllCall("Comdlg32\ChooseFont", "Ptr", tag_choose_font, "Cdecl")
+    result := DllCall("Comdlg32\ChooseFont", "Ptr", tag_choose_font)
 
     if !result
     {

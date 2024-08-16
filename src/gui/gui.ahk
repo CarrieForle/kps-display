@@ -48,7 +48,7 @@ spawn_gui_from_context(guis, main_gui, config, init_gui, item_name, item_pos, co
     guis[item_name] := init_gui(main_gui, config)
     guis[item_name].Show()
     main_gui.Opt("+Disabled")
-    SetTimer kps_update, 0
+    toggle_kps_update(false)
 
     context_menu.Insert(item_pos "&", item_name, spawn_gui_from_context.Bind(guis, main_gui, config, init_gui))
     context_menu.Delete((item_pos + 1) "&")

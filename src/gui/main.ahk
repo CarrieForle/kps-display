@@ -63,11 +63,11 @@ _real_resize(&config, gui_obj, minmax, width, height)
     {
         if minmax = -1
         {
-            SetTimer kps_update, 0
+            toggle_kps_update(false)
         }
         else
         {
-            SetTimer kps_update, config.general.update_interval
+            toggle_kps_update(true)
         }
 
         last_minmax := minmax
@@ -99,17 +99,16 @@ _real_resize(&config, gui_obj, minmax, width, height)
     last_align := config.KPS.align
     last_width := width
     gui_obj.size := [width, height]
-    kps_text.Redraw()
 }
 
 enable_main_and_destroy_self(main_gui, orig_gui, config?)
 {
     orig_gui.Destroy()
-    
     main_gui.Show()
     main_gui.Opt("-Disabled")
     main_gui["kps_text"].Enabled := false
     main_gui["kps_text"].Enabled := true
+    toggle_kps_update(true)
 
     if IsSet(config)
     {
