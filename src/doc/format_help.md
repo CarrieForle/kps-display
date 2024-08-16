@@ -1,8 +1,10 @@
+# Format KPS
+
 ## Starter
 
-The format textbox allows you to format KPS (Key per second) display with the text of your input. This is typically used to add indicator (e.g., KPS: 7) but you are free to do whatever you want.  
+The format textbox allows you to format KPS display with the text of your input. This is typically used, for example to add an indicator ("KPS: 7" instead of just 7).
 
-The following description applies to the format textbox in the program and in turn `format` of `[KPS]` section in `ini` profiles.  
+The following description applies to the format textbox in the program and in turn `format` of `[KPS]` section in the profiles.  
 
 The format text is composed of **placeholders** and arbitrary texts. Placeholders are substituted as some values (typically KPS) by the program and accompanied with rest of the texts.  
 
@@ -29,16 +31,16 @@ If KPS were 12:
 
 ### Flag and Width
 
-The **flags** and **width** can be optionally used inside the placeholders.  
+The **flags** and **width** can be optionally used inside the placeholders. You may combine multiple flags.
 - `-` flag left aligns KPS. (By default KPS is right-aligned)  
 - `0` flag pads with 0. 
 - `=` flag pads with custom padding. 
-
-You can use multiple flags but you cannot combine `0` and `=` flag.  
-
+- 
 If `-` flag is present, it **must** be specified in front of all the other flags.  
 
-The width is a positive integer controlling the minimum length (number of characters) of KPS. If KPS is shorter than width, characters will be *padded* onto KPS. By default it's blank character but you can use flags to alter it..  
+if `=` flag is present, `0` flag must not be used and width is not supported.
+
+The width is a positive integer controlling the minimum length (number of characters) of KPS. If KPS is shorter than width, characters will be *padded* onto KPS. By default it's blank character but you can use flags to alter it.  
 
 If you are familiar with C programming language, it basically works like `printf()`.  
 
@@ -49,7 +51,7 @@ For example, if KPS were 10 and custom KPS is not specified:
 
 (Pretend the `.` is space :))  
 
-Note the width of KPS in this case is 2 because `10` 2 characters long. We specified the minimum width of KPS as 11, so 9 extra space are *padded* to KPS.  
+Note the width of KPS in this case is 2 because `10` is two characters long. We specified the minimum width of KPS as 11, so 9 extra space are *padded* to KPS.  
 
 Because we don't have custom KPS, `%d` and `%s` in this case is the same. If we specified a custom KPS for 10 to `Madeline`:  
 `%11s`  = `...Madeline`  
@@ -67,16 +69,12 @@ You may use these [escape characters](https://en.wikipedia.org/wiki/Escape_chara
 - `\'` literal `'`
 - `\"` literal `"`
 
-Note while there exist more escape characters, they are not supported unless explicitly stated.  
+Other other escape characters are not supported.
 
 ## Troubleshooting
-
-**Config file encoding must be either UTF-16 or ANSI. If you use Unicode characters make sure your have the right encoding.**  
-
-When the program couldn't recognize the pattern such as attempting to use non-exist type for placeholders, or use unsupported escape characters, it will not give out errors but rather use them literally.  
 
 > Padding doesn't work
 
 In order for padding to work. *Width* must be provided so the program know how much should it pad.  
 
-If you use custom padding flag i.e., `=` flag, be sure you provided custom padding in the config.  
+If you use custom padding flag i.e., `=` flag, be sure you provided custom padding in the profile.
